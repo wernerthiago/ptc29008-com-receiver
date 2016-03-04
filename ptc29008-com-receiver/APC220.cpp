@@ -43,10 +43,11 @@ void APC220::closed() {
 	close(tty_fd);
 }
 
-char * APC220::receiveFSM() {
+string APC220::receiveFSM() {
 	int receive = -1;
 	int i = 0;
 	bool bandeira = true;
+	string teste;
 	unsigned char data = '0';
 	char buffer[MAX_LENGTH] = {0};
 
@@ -65,11 +66,11 @@ char * APC220::receiveFSM() {
 		case 0:
 			if(data == 0x7E){
 				cout << "FIM!" << endl;
-				return buffer;
+				return teste;
 			}else{
 				cout << "Receive = 0, mas não terminou a mensagem!" << endl;
 				cout << "Erro inesperado!" << endl;
-				return buffer;
+				return teste;
 			}
 		default:
 			switch(data){
@@ -78,7 +79,9 @@ char * APC220::receiveFSM() {
 					bandeira = false;
 				}else{
 					cout << buffer << endl;
-					return buffer;
+					teste = buffer;
+					//buffer[i++] = '\0';
+					return teste;
 				}
 				break;
 			case 0x7D:
@@ -102,6 +105,7 @@ char * APC220::receiveFSM() {
 		}
 	}
 }
+
 
 void APC220::send(char* msg) {
 	int i = 1;
@@ -136,4 +140,12 @@ void APC220::sendFSM(int tty_fd, char data, int count, int length) {
 		}
 		break;
 	}
+}
+
+unsigned short APC220::crcFast(char * message, int nBytes){
+	register int counter;
+	register unsigned short crc = 0;
+	for( counter = 0; counter < nBytes; counter++)
+		crc = (crc<<8) ^ crc16tab[((crc>>8) ^ *(char *)message++)&0x00FF];
+	return crc;
 }

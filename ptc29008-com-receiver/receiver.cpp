@@ -91,10 +91,35 @@ using namespace std;
 
 int main(){
 	APC220 receiver;
+	char * data = 0;
+	string teste;
 
-	char * data = "0";
-	data = receiver.receiveFSM();
-	cout << data << endl;
+	int i=0;
+
+	teste = (string)receiver.receiveFSM();
+	cout << "Recebido: "<< teste << endl;
+	char rec_lo = teste.at(6);
+	char rec_hi = teste.at(7);
+	string mensagem = teste;
+	mensagem.resize(mensagem.size()-2);
+	cout << "Mensagem: " << mensagem << endl;
+	char *cstr = new char[mensagem.length() + 1];
+	strcpy(cstr, mensagem.c_str());
+	unsigned short fcs = (uint16_t)receiver.crcFast(cstr,strlen(cstr));
+	char lo = fcs & 0xFF;
+	char hi = fcs >> 8;
+	if(lo == rec_lo){
+		if(hi == rec_hi){
+			cout << "CRC: OK" << endl;
+		}else{
+			cout << "CRC: NOK" << endl;
+			cout << "CRC: High bit error" << endl;
+		}
+	}else{
+		cout << "CRC: NOK" << endl;
+		cout << "CRC: Low bit error" << endl;
+	}
+
 	receiver.closed();
 	return 0;
 }
