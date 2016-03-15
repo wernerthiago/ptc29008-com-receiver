@@ -46,7 +46,7 @@ void APC220::closed() {
 	close(tty_fd);
 }
 
-string APC220::receiveFSM() {
+char * APC220::receiveFSM() {
 	int receive = -1;
 	int i = 0;
 	bool bandeira = true;
@@ -69,11 +69,11 @@ string APC220::receiveFSM() {
 		case 0:
 			if(data == 0x7E){
 				cout << "FIM!" << endl;
-				return teste;
+				return buffer;
 			}else{
 				cout << "Receive = 0, mas não terminou a mensagem!" << endl;
 				cout << "Erro inesperado!" << endl;
-				return teste;
+				return buffer;
 			}
 		default:
 			switch(data){
@@ -83,7 +83,7 @@ string APC220::receiveFSM() {
 				}else{
 					teste = buffer;
 					//buffer[i++] = '\0';
-					return teste;
+					return buffer;
 				}
 				break;
 			case 0x7D:
@@ -113,25 +113,29 @@ bool APC220::send(char* msg) {
 	string mensagem;
 
 	//Adicionando a SEQ
-	mensagem = msg;
-	mensagem.insert(0,1,getPTC());
+	//	mensagem = msg;
+	//	mensagem.insert(0,1,getPTC());
+	msg[2] = getPTC();
 	//Adicionando o PROTOCOLO
 	if(getSEQ() == 1){
-		mensagem.insert(0,1,'1');
+		//		mensagem.insert(0,1,'1');
+		msg[1] = '1';
 	}else{
-		mensagem.insert(0,1,'0');
+		//		mensagem.insert(0,1,'0');
+		msg[1] = '0';
 	}
 	//Adicionando o TYPE da mensagem
 	//Se 0 é dados
 	//Se 1 é controle
-	mensagem.insert(0,1,'0');
-	char * aux = new char[mensagem.length() + 1]; // or
-	std::strcpy(aux, mensagem.c_str());
-	unsigned short fcs = (uint16_t)this->crcFast(aux,strlen(aux));
+	//	mensagem.insert(0,1,'0');
+	msg[0] = '0';
+	//	char * aux = new char[mensagem.length() + 1]; // or
+	//	std::strcpy(aux, mensagem.c_str());
+	unsigned short fcs = (uint16_t)this->crcFast(msg,strlen(msg));
 	char lo = fcs & 0xFF;
 	char hi = fcs >> 8;
 	//Adicionando CRC
-	char * payload = appendCharToCharArray(aux,lo);
+	char * payload = appendCharToCharArray(msg,lo);
 	payload = appendCharToCharArray(payload,hi);
 	cout << payload << endl;
 	//Enviando
@@ -143,7 +147,7 @@ bool APC220::send(char* msg) {
 	}
 
 	if(timeout()){
-		string arq = receiveFSM();
+		char * arq = receiveFSM();
 		//		cout << "ARQ: " << arq << endl;
 		arq = crcReception(arq);
 		arq = headerReception(arq);
@@ -161,31 +165,34 @@ bool APC220::send(char* msg) {
 
 bool APC220::sendControl() {
 	int i = 1;
-	string mensagem;
+	char * mensagem;
 
 	//Adicionando a SEQ
 	if(getSEQ() == 1){
-		mensagem.insert(0,1,'1');
+		mensagem[3] = '1';
 	}else{
-		mensagem.insert(0,1,'0');
+		mensagem[3] = '0';
 	}
 	//Adicionando o TYPE da mensagem
 	//Se 0 é dados
 	//Se 1 é controle
-	mensagem.insert(0,1,'0'); //ENCHIMENTO
-	mensagem.insert(0,1,'0'); //ENCHIMENTO
-	mensagem.insert(0,1,'1');
+//	mensagem.insert(0,1,'0'); //ENCHIMENTO
+	mensagem[2] = '0';
+//	mensagem.insert(0,1,'0'); //ENCHIMENTO
+	mensagem[1] = '0';
+//	mensagem.insert(0,1,'1');
+	mensagem[0] = '1';
 	//	cout << "ACK Frame: " << mensagem << endl;
-	char * aux = new char[mensagem.length() + 1]; // or
-	std::strcpy(aux, mensagem.c_str());
+//	char * aux = new char[mensagem.length() + 1]; // or
+//	std::strcpy(aux, mensagem.c_str());
 	//	cout << "strlen(aux): " << strlen(aux) << endl;
-	unsigned short fcs = (uint16_t)this->crcFast(aux,strlen(aux));
+	unsigned short fcs = (uint16_t)this->crcFast(mensagem,strlen(mensagem));
 	char lo = fcs & 0xFF;
 	//	cout << "ACK Low bit: " << unsigned(lo) << endl;
 	char hi = fcs >> 8;
 	//	cout << "ACK High bit: " << unsigned(hi) << endl;
 	//Adicionando CRC
-	char * payload = appendCharToCharArray(aux,lo);
+	char * payload = appendCharToCharArray(mensagem,lo);
 	payload = appendCharToCharArray(payload,hi);
 	//	cout << "ACK+FCS: " << payload << endl;
 	//Enviando
@@ -243,9 +250,9 @@ unsigned short APC220::crcFast(char * message, int nBytes){
 	return crc;
 }
 
-string APC220::crcReception(string teste){
-	char rec_lo = teste.at(teste.length()-2);
-	char rec_hi = teste.at(teste.length()-1);
+char * APC220::crcReception(char * teste){
+	char rec_lo = teste[strlen(teste)-2];
+	char rec_hi = teste[strlen(teste)-1];
 	string mensagem = teste;
 	mensagem.resize(mensagem.size()-2);
 	char *cstr = new char[mensagem.length() + 1];
@@ -264,7 +271,7 @@ string APC220::crcReception(string teste){
 		cout << "CRC: NOK" << endl;
 		cout << "CRC: Low bit error" << endl;
 	}
-	return mensagem;
+	return cstr;
 }
 
 bool APC220::timeout(){
@@ -285,38 +292,38 @@ bool APC220::timeout(){
 	}
 }
 
-string APC220::headerReception(string mensagem){
+char * APC220::headerReception(char * mensagem){
 	int aux;
-	if(mensagem.at(0) == '0'){
+	char * aux2;
+
+	if(mensagem[0] == '0'){
 		//		cout << "Mensagem de dados" << endl;
-		if(mensagem.at(1) == '0'){
+		if(mensagem[1] == '0'){
 			aux = 0;
-			cout << "aux = 0" << endl;
-			cout << "getSEQ:" << getSEQ() << endl;
 		}else{
 			aux = 1;
 		}
 		if(aux != getSEQ()){
-			setSEQ(aux);
-			setPTC((Protocol)mensagem.at(2));
-			mensagem.erase(0,3);
+			setSEQ(mensagem[1]);
+			setPTC((Protocol)mensagem[2]);
+			aux2 = mensagem+3;
 		}else{
 			cout << "Descarta a mensagem" << endl;
 			return "0";
 		}
 	}else{
-		if(mensagem.at(3) == '0'){
+		if(mensagem[3] == '0'){
 			aux = 0;
 		}else{
 			aux = 1;
 		}
 		if(aux == getSEQ()){
 			setSEQ(aux);
-			mensagem.erase(0,4);
+			aux2 = mensagem+4;
 		}else{
 			cout << "Retransmite" << endl;
 			return "1";
 		}
 	}
-	return mensagem;
+	return aux2;
 }

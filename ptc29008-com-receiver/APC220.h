@@ -34,15 +34,15 @@ public:
 	APC220();
 	virtual ~APC220();
 	bool send(char* msg);
-	string receiveFSM();
+	char * receiveFSM();
 	void closed();
 	unsigned short crcFast(char * message, int nBytes);
 	char* appendCharToCharArray(char* array, char a);
 	void sendFSM(int tty_fd, char data, int count, int length);
-	string crcReception(string teste);
+	char * crcReception(char * teste);
 	bool timeout();
 	bool sendControl();
-	string headerReception(string mensagem);
+	char * headerReception(char * mensagem);
 	void setPTC(Protocol ptc){
 		this->ptc = ptc;
 	}
