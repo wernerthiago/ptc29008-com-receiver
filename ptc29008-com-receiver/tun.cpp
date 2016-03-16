@@ -116,6 +116,10 @@ int tun::set_ip(char *dev, char * ip, char * dst) {
 	ok = ioctl(sd, SIOCSIFNETMASK, &ifr);
 	if (ok < 0) return ok;
 
+	ifr.ifr_mtu = 256;
+	ok = ioctl(sd, SIOCSIFMTU, &ifr);
+	if (ok < 0) return ok;
+
 	// lê as flags da interface
 	ok = ioctl(sd, SIOCGIFFLAGS, &ifr);
 	if (ok < 0) return ok;

@@ -15,16 +15,18 @@ int main(){
 
 	receiver.setSEQ(1);
 
-	int fd = tun.tun_alloc("tun1");
-	if (tun.set_ip("tun1", "10.0.0.1", "10.0.0.2") < 0) {
+	int fd = tun.tun_alloc("tun0");
+	if (tun.set_ip("tun0", "10.0.0.1", "10.0.0.2") < 0) {
 		perror("so configurar a interface tun");
 		return 0;
 	}
 
 	while(1){
 		data = receiver.receiveFSM();
+		cout << data << endl;
 		data = receiver.crcReception(data);
 		data = receiver.headerReception(data);
+		cout << data << endl;
 		write(fd,data,MAX_LENGTH);
 	}
 

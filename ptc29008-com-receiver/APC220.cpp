@@ -31,7 +31,7 @@ APC220::APC220() {
 	tio.c_cc[VMIN]=1;
 	tio.c_cc[VTIME]=5;
 
-	this->tty_fd=open("/dev/ttyUSB1", O_RDWR | O_NONBLOCK);
+	this->tty_fd=open("/dev/ttyUSB0", O_RDWR | O_NONBLOCK);
 	cfsetospeed(&tio,B9600);            // 115200 baud
 	cfsetispeed(&tio,B9600);            // 115200 baud
 
@@ -100,6 +100,7 @@ char * APC220::receiveFSM() {
 				break;
 			default:
 				buffer[i] = data;
+				cout << data << endl;
 				i++;
 				break;
 			}
